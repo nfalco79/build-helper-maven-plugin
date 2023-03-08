@@ -6,7 +6,7 @@
         <version>1.0.0</version>
     </parent>
     <artifactId>build-helper-maven-plugin</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
     <packaging>maven-plugin</packaging>
     <name>Collection of maven helper goals</name>
     <description>Maven plugin to assist the build automation of any maven project.</description>
@@ -18,7 +18,7 @@
     <scm>
         <url>https://github.com/nfalco79/build-helper-maven-plugin</url>
         <developerConnection>scm:git:git@github.com:nfalco79/build-helper-maven-plugin.git</developerConnection>
-      <tag>1.0.0</tag>
+      <tag>HEAD</tag>
   </scm>
     <properties>
         <java.level>8</java.level>
