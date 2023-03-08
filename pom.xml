@@ -24,7 +24,7 @@
     </scm>
     <properties>
         <java.level>8</java.level>
-        <mavenVersion>3.6.3</mavenVersion>
+        <mavenVersion>3.9.0</mavenVersion>
         <maven-plugin-annotations>3.6.4</maven-plugin-annotations>
     </properties>
     <dependencies>
