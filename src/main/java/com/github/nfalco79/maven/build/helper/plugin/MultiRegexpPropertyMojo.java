@@ -14,7 +14,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.thedigitalstack.maven.build.helper.plugin;
+package com.github.nfalco79.maven.build.helper.plugin;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -25,11 +31,13 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 
 /**
- * Sets a property value if an environment variable exists.
+ * Sets a property using a set of defined rules to calculate a version for .
  */
-@Mojo(name = "environment-property", defaultPhase = LifecyclePhase.VALIDATE, threadSafe = true)
-public class EnvironmentPropertyMojo extends AbstractMojo {
+@Mojo(name = "multi-regexp-property", defaultPhase = LifecyclePhase.VALIDATE, threadSafe = true)
+public class MultiRegexpPropertyMojo extends AbstractMojo {
 
+    @Parameter(required = true)
+    private List<RegexPropertyRule> rules = new ArrayList<>();
     /**
      * The property to set.
      */
@@ -37,27 +45,21 @@ public class EnvironmentPropertyMojo extends AbstractMojo {
     private String property;
 
     /**
-     * The string to check with regex.
+     * The value against apply the regular expression rules.
      */
     @Parameter(required = true)
-    private String variable;
-
-    /**
-     * The value for the property if the variable exists.
-     */
-    @Parameter(defaultValue = "true")
     private String value;
 
     /**
-     * The value for the property if the variable not exists.
+     * The value if no one regular expression matches.
      */
-    @Parameter(defaultValue = "false")
-    private String noExistValue;
+    @Parameter
+    private String noRuleMatchValue;
 
     /**
      * This allows to skip the execution.
      */
-    @Parameter(property = "buildhelper.environment-property.skip", defaultValue = "false")
+    @Parameter(property = "buildhelper.multi-regexp-property.skip", defaultValue = "false")
     private boolean skip;
 
     /**
@@ -75,23 +77,41 @@ public class EnvironmentPropertyMojo extends AbstractMojo {
 
         validate();
 
-        String propertyValue = System.getenv().containsKey(variable) ? value : noExistValue;
+        String propertyValue = noRuleMatchValue;
+        for (RegexPropertyRule rule : getRules()) {
+            Pattern pattern = Pattern.compile(rule.getRegexp());
+            Matcher matcher = pattern.matcher(value);
+            if (matcher.find()) {
+                String replacement = rule.getReplacement();
+                if (matcher.groupCount() > 0) {
+                    for (int i = 1; i <= matcher.groupCount(); i++) {
+                        replacement = replacement.replace("\\" + i, matcher.group(i));
+                    }
+                }
+                propertyValue = matcher.replaceAll(StringUtil.trimToEmpty(replacement));
+                break;
+            }
+        }
 
-        defineProperty(getProperty(), propertyValue);
+        defineProperty(getProperty(), propertyValue == null ? "" : propertyValue);
     }
 
     protected void validate() throws MojoFailureException {
-        if (isBlank(getProperty())) {
+        if (StringUtil.isBlank(property)) {
             throw new MojoFailureException("property is required");
         }
-        if (isBlank(variable)) {
-            throw new MojoFailureException("variable is required");
+        if (StringUtil.isBlank(value)) {
+            throw new MojoFailureException("value is required");
         }
-    }
 
-    /* we do not want import third party library just for a method neither plexus util */
-    private boolean isBlank(String value) {
-        return value == null || value.trim().length() == 0;
+        if (getRules().isEmpty()) {
+            throw new MojoFailureException("At least a regexp rule is required");
+        }
+        for (RegexPropertyRule rule : getRules()) {
+            if (StringUtil.isBlank(rule.getRegexp())) {
+                throw new MojoFailureException("rule regexp is required");
+            }
+        }
     }
 
     protected void defineProperty(String name, String value) {
@@ -127,5 +147,25 @@ public class EnvironmentPropertyMojo extends AbstractMojo {
 
     public void setProperty(String property) {
         this.property = property;
+    }
+
+    public List<RegexPropertyRule> getRules() {
+        return rules;
+    }
+
+    public void setRules(List<RegexPropertyRule> rules) {
+        this.rules = rules != null ? rules : Collections.emptyList();
+    }
+
+    public void addRules(RegexPropertyRule rule) {
+        this.rules.add(rule);
+    }
+
+    public String getNoRuleMatchValue() {
+        return noRuleMatchValue;
+    }
+
+    public void setNoRuleMatchValue(String noRuleMatchValue) {
+        this.noRuleMatchValue = noRuleMatchValue;
     }
 }

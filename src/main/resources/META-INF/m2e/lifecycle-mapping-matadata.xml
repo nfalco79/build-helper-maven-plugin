@@ -5,6 +5,7 @@
             <pluginExecutionFilter>
                 <goals>
                     <goal>environment-property</goal>
+                    <goal>multi-regexp-property</goal>
                 </goals>
             </pluginExecutionFilter>
             <action>
