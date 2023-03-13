@@ -47,7 +47,7 @@ public class MultiRegexpPropertyMojo extends AbstractMojo {
     /**
      * The value against apply the regular expression rules.
      */
-    @Parameter(required = true)
+    @Parameter
     private String value;
 
     /**
@@ -78,9 +78,10 @@ public class MultiRegexpPropertyMojo extends AbstractMojo {
         validate();
 
         String propertyValue = noRuleMatchValue;
+        String valueToMatch = StringUtil.trimToEmpty(value);
         for (RegexPropertyRule rule : getRules()) {
             Pattern pattern = Pattern.compile(rule.getRegexp());
-            Matcher matcher = pattern.matcher(value);
+            Matcher matcher = pattern.matcher(valueToMatch);
             if (matcher.find()) {
                 String replacement = rule.getReplacement();
                 if (matcher.groupCount() > 0) {
@@ -99,9 +100,6 @@ public class MultiRegexpPropertyMojo extends AbstractMojo {
     protected void validate() throws MojoFailureException {
         if (StringUtil.isBlank(property)) {
             throw new MojoFailureException("property is required");
-        }
-        if (StringUtil.isBlank(value)) {
-            throw new MojoFailureException("value is required");
         }
 
         if (getRules().isEmpty()) {
