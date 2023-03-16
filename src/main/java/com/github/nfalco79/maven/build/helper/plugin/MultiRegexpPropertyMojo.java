@@ -19,6 +19,7 @@ package com.github.nfalco79.maven.build.helper.plugin;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -61,6 +62,12 @@ public class MultiRegexpPropertyMojo extends AbstractMojo {
      */
     @Parameter(property = "buildhelper.multi-regexp-property.skip", defaultValue = "false")
     private boolean skip;
+
+    /**
+     * Overwrite an existing property or not.
+     */
+    @Parameter(readonly = true, defaultValue = "true")
+    private boolean overwrite = true;
 
     /**
      * The maven project
@@ -117,7 +124,12 @@ public class MultiRegexpPropertyMojo extends AbstractMojo {
             getLog().debug("Define property " + name + " = \"" + value + "\"");
         }
 
-        project.getProperties().put(name, value);
+        Properties prjProps = project.getProperties();
+        if (overwrite) {
+            prjProps.put(name, value);
+        } else {
+            prjProps.putIfAbsent(name, value);
+        }
     }
 
     public String getValue() {
@@ -165,5 +177,13 @@ public class MultiRegexpPropertyMojo extends AbstractMojo {
 
     public void setNoRuleMatchValue(String noRuleMatchValue) {
         this.noRuleMatchValue = noRuleMatchValue;
+    }
+
+    public boolean isOverwrite() {
+        return overwrite;
+    }
+
+    public void setOverwrite(boolean overwrite) {
+        this.overwrite = overwrite;
     }
 }

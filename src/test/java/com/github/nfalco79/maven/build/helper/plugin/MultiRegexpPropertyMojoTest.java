@@ -16,6 +16,9 @@
  */
 package com.github.nfalco79.maven.build.helper.plugin;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import org.apache.maven.project.MavenProject;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
@@ -27,7 +30,7 @@ public class MultiRegexpPropertyMojoTest {
         MavenProject mavenProject = new MavenProject();
         MultiRegexpPropertyMojo mojo = prepareMojo(mavenProject);
 
-        mojo.setValue("master");
+        mojo.setValue("master@");
         mojo.execute();
 
         Assertions.assertThat(mavenProject.getProperties()).containsEntry(mojo.getProperty(), "latest");
@@ -38,7 +41,7 @@ public class MultiRegexpPropertyMojoTest {
         MavenProject mavenProject = new MavenProject();
         MultiRegexpPropertyMojo mojo = prepareMojo(mavenProject);
 
-        mojo.setValue("support/1.0.x");
+        mojo.setValue("support/1.0.x@");
         mojo.execute();
 
         Assertions.assertThat(mavenProject.getProperties()).containsEntry(mojo.getProperty(), "1.0-latest");
@@ -68,11 +71,59 @@ public class MultiRegexpPropertyMojoTest {
         Assertions.assertThat(mavenProject.getProperties()).containsEntry(mojo.getProperty(), mojo.getNoRuleMatchValue());
     }
 
+    @Test
+    public void test_regexp() throws Exception {
+        MavenProject mavenProject = new MavenProject();
+        MultiRegexpPropertyMojo mojo = prepareMojo(mavenProject);
+
+        mojo.getRules().clear();
+        mojo.addRules(new RegexPropertyRule("^master@.*$", "latest"));
+        mojo.addRules(new RegexPropertyRule("^support/(.+)\\.x@.*$", "\\1-latest"));
+        mojo.addRules(new RegexPropertyRule("^support/(\\w+)@.*$", "latest-\\1"));
+
+        mojo.setValue("support/cc@");
+        mojo.execute();
+        Assertions.assertThat(mavenProject.getProperties()).containsEntry(mojo.getProperty(), "latest-cc");
+
+        mojo.setValue("support/1.0.x@");
+        mojo.execute();
+        Assertions.assertThat(mavenProject.getProperties()).containsEntry(mojo.getProperty(), "1.0-latest");
+    }
+
+    @Test
+    public void test_release_version() throws Exception {
+        MavenProject mavenProject = new MavenProject();
+        MultiRegexpPropertyMojo mojo = prepareMojo(mavenProject);
+
+        List<RegexPropertyRule> rules = new LinkedList<>(mojo.getRules());
+        rules.add(0, new RegexPropertyRule("^.+@(.+)$", "\\1"));
+        mojo.setRules(rules);
+        mojo.setNoRuleMatchValue(null);
+        mojo.setValue("master@1.0.0");
+        mojo.execute();
+        Assertions.assertThat(mavenProject.getProperties()).containsEntry(mojo.getProperty(), "1.0.0");
+    }
+
+    @Test
+    public void test_overwrite_false() throws Exception {
+        MavenProject mavenProject = new MavenProject();
+        MultiRegexpPropertyMojo mojo = prepareMojo(mavenProject);
+
+        String originalValue = "some value";
+        mavenProject.getProperties().put(mojo.getProperty(), originalValue);
+
+        mojo.setValue("support/1.0.x");
+        mojo.setOverwrite(false);
+        mojo.execute();
+
+        Assertions.assertThat(mavenProject.getProperties()).containsEntry(mojo.getProperty(), originalValue);
+    }
+
     private MultiRegexpPropertyMojo prepareMojo(MavenProject mavenProject) {
         MultiRegexpPropertyMojo mojo = new MultiRegexpPropertyMojo();
         mojo.setProject(mavenProject);
-        mojo.addRules(new RegexPropertyRule("^master$", "latest"));
-        mojo.addRules(new RegexPropertyRule("^support\\/(.+).x$", "\\1-latest"));
+        mojo.addRules(new RegexPropertyRule("^master@.*$", "latest"));
+        mojo.addRules(new RegexPropertyRule("^support/(.+)\\.x@.*$", "\\1-latest"));
         mojo.setNoRuleMatchValue("1.0.0-SNAPSHOT");
         mojo.setProperty("image.tag");
         return mojo;
