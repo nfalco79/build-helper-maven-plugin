@@ -66,7 +66,7 @@ public class MultiRegexpPropertyMojo extends AbstractMojo {
     /**
      * Overwrite an existing property or not.
      */
-    @Parameter(readonly = true, defaultValue = "true")
+    @Parameter(defaultValue = "true")
     private boolean overwrite = true;
 
     /**

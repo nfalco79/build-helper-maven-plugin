@@ -16,6 +16,8 @@
  */
 package com.github.nfalco79.maven.build.helper.plugin;
 
+import java.util.Properties;
+
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -55,6 +57,12 @@ public class EnvironmentPropertyMojo extends AbstractMojo {
     private String noExistValue;
 
     /**
+     * Overwrite an existing property or not.
+     */
+    @Parameter(defaultValue = "true")
+    private boolean overwrite;
+
+    /**
      * This allows to skip the execution.
      */
     @Parameter(property = "buildhelper.environment-property.skip", defaultValue = "false")
@@ -75,7 +83,7 @@ public class EnvironmentPropertyMojo extends AbstractMojo {
 
         validate();
 
-        String propertyValue = System.getenv().containsKey(variable) ? value : getNoExistValue();
+        String propertyValue = System.getenv().containsKey(getVariable()) ? value : getNoExistValue();
 
         defineProperty(getProperty(), propertyValue);
     }
@@ -84,7 +92,7 @@ public class EnvironmentPropertyMojo extends AbstractMojo {
         if (StringUtil.isBlank(getProperty())) {
             throw new MojoFailureException("property is required");
         }
-        if (StringUtil.isBlank(variable)) {
+        if (StringUtil.isBlank(getVariable())) {
             throw new MojoFailureException("variable is required");
         }
     }
@@ -94,7 +102,12 @@ public class EnvironmentPropertyMojo extends AbstractMojo {
             getLog().debug("Define property " + name + " = \"" + value + "\"");
         }
 
-        project.getProperties().put(name, value);
+        Properties prjProps = project.getProperties();
+        if (isOverwrite()) {
+            prjProps.put(name, value);
+        } else {
+            prjProps.putIfAbsent(name, value);
+        }
     }
 
     public String getValue() {
@@ -104,6 +117,7 @@ public class EnvironmentPropertyMojo extends AbstractMojo {
     public void setValue(String value) {
         this.value = value;
     }
+
     public boolean isSkip() {
         return skip;
     }
@@ -130,5 +144,21 @@ public class EnvironmentPropertyMojo extends AbstractMojo {
 
     public void setNoExistValue(String noExistValue) {
         this.noExistValue = noExistValue;
+    }
+
+    public boolean isOverwrite() {
+        return overwrite;
+    }
+
+    public void setOverwrite(boolean overwrite) {
+        this.overwrite = overwrite;
+    }
+
+    public String getVariable() {
+        return variable;
+    }
+
+    public void setVariable(String variable) {
+        this.variable = variable;
     }
 }

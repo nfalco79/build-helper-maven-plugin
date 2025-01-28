@@ -19,7 +19,7 @@
         <url>https://github.com/nfalco79/build-helper-maven-plugin</url>
         <developerConnection>scm:git:git@github.com:nfalco79/build-helper-maven-plugin.git</developerConnection>
       <tag>HEAD</tag>
-  </scm>
+    </scm>
     <properties>
         <java.level>8</java.level>
         <mavenVersion>3.6.3</mavenVersion>
